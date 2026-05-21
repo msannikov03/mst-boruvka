@@ -1,6 +1,7 @@
 #include "mst/graph_csr.hpp"
 
 #include <cassert>
+#include <cstddef>
 
 namespace mst {
 

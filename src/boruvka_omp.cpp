@@ -66,20 +66,21 @@ MSTResult boruvka_omp(const GraphCSR& g, int num_threads) {
             }
         }
 
+        const int64_t N = static_cast<int64_t>(g.n);
         #pragma omp parallel for schedule(static) num_threads(T)
-        for (uint32_t c = 0; c < g.n; ++c) {
+        for (int64_t c = 0; c < N; ++c) {
             uint64_t best_id = kNoEdge;
             double   best_w  = 0.0;
             for (int t = 0; t < T; ++t) {
-                uint64_t cid = tl_id[t][c];
+                uint64_t cid = tl_id[t][static_cast<size_t>(c)];
                 if (cid == kNoEdge) continue;
-                if (better(best_id, best_w, cid, tl_w[t][c])) {
+                if (better(best_id, best_w, cid, tl_w[t][static_cast<size_t>(c)])) {
                     best_id = cid;
-                    best_w  = tl_w[t][c];
+                    best_w  = tl_w[t][static_cast<size_t>(c)];
                 }
             }
-            cheapest  [c] = best_id;
-            cheapest_w[c] = best_w;
+            cheapest  [static_cast<size_t>(c)] = best_id;
+            cheapest_w[static_cast<size_t>(c)] = best_w;
         }
 
         bool merged_anything = false;
