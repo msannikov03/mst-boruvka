@@ -1,5 +1,11 @@
 add_executable(gen_graph gen_graph.cpp)
 target_link_libraries(gen_graph PRIVATE mst mst_warnings)
 
+add_executable(gen_grid gen_grid.cpp)
+target_link_libraries(gen_grid PRIVATE mst mst_warnings)
+
 add_executable(bench bench.cpp)
 target_link_libraries(bench PRIVATE mst mst_warnings)
+
+add_executable(dump_mst dump_mst.cpp)
+target_link_libraries(dump_mst PRIVATE mst mst_warnings)
