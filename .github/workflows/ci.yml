@@ -34,7 +34,7 @@ jobs:
 
       - name: install boost via vcpkg
         shell: pwsh
-        run: vcpkg install boost-graph:x64-windows-static
+        run: vcpkg install boost-graph:x64-windows-static-md
 
       - name: configure
         shell: pwsh
@@ -42,7 +42,7 @@ jobs:
           cmake -S . -B build -A x64 `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
 
       - name: build
         run: cmake --build build --config Release -j

@@ -29,10 +29,10 @@ ctest --test-dir build --output-on-failure
 Windows (MSVC + vcpkg):
 
 ```
-vcpkg install boost-graph:x64-windows-static
+vcpkg install boost-graph:x64-windows-static-md
 cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release ^
     -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake ^
-    -DVCPKG_TARGET_TRIPLET=x64-windows-static
+    -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
 cmake --build build --config Release -j
 ctest --test-dir build -C Release --output-on-failure
 ```
