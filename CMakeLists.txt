@@ -54,6 +54,9 @@ set(MST_SOURCES
     src/union_find.cpp
     src/union_find_atomic.cpp
     src/boruvka_seq.cpp
+    src/kruskal.cpp
+    src/prim.cpp
+    src/boruvka_omp.cpp
 )
 
 add_library(mst STATIC ${MST_SOURCES})
@@ -63,4 +66,5 @@ target_link_libraries(mst
     PRIVATE mst_warnings
 )
 
+add_subdirectory(tools)
 add_subdirectory(tests)

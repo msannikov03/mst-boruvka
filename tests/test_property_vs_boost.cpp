@@ -1,5 +1,8 @@
+#include "mst/boruvka_omp.hpp"
 #include "mst/boruvka_seq.hpp"
 #include "mst/graph_csr.hpp"
+#include "mst/kruskal.hpp"
+#include "mst/prim.hpp"
 
 #include <gtest/gtest.h>
 
@@ -53,7 +56,7 @@ std::vector<mst::Edge> random_connected_graph(uint32_t n, double p,
 
 }  // namespace
 
-TEST(PropertyVsBoost, BoruvkaSeqMatches) {
+TEST(PropertyVsBoost, AllAlgorithmsMatch) {
     std::mt19937_64 rng(0xC0FFEEull);
     constexpr int kTrials = 60;
     for (int trial = 0; trial < kTrials; ++trial) {
@@ -63,15 +66,29 @@ TEST(PropertyVsBoost, BoruvkaSeqMatches) {
         auto g = mst::GraphCSR::from_edges(n, edges);
 
         double oracle = boost_mst_weight(n, edges);
-        auto rb = mst::boruvka_seq(g);
 
+        auto rk = mst::kruskal(n, edges);
+        auto rp = mst::prim(g);
+        auto rb = mst::boruvka_seq(g);
+        auto ro = mst::boruvka_omp(g, 4);
+
+        EXPECT_NEAR(rk.total_weight, oracle, 1e-9)
+            << "trial=" << trial << " (kruskal) n=" << n << " p=" << p;
+        EXPECT_NEAR(rp.total_weight, oracle, 1e-9)
+            << "trial=" << trial << " (prim) n=" << n << " p=" << p;
         EXPECT_NEAR(rb.total_weight, oracle, 1e-9)
-            << "trial=" << trial << " n=" << n << " p=" << p;
+            << "trial=" << trial << " (boruvka_seq) n=" << n << " p=" << p;
+        EXPECT_NEAR(ro.total_weight, oracle, 1e-9)
+            << "trial=" << trial << " (boruvka_omp) n=" << n << " p=" << p;
+
+        EXPECT_EQ(rk.edge_ids.size(), static_cast<size_t>(n - 1));
+        EXPECT_EQ(rp.edge_ids.size(), static_cast<size_t>(n - 1));
         EXPECT_EQ(rb.edge_ids.size(), static_cast<size_t>(n - 1));
+        EXPECT_EQ(ro.edge_ids.size(), static_cast<size_t>(n - 1));
     }
 }
 
-TEST(PropertyVsBoost, BoruvkaSeqDuplicateWeights) {
+TEST(PropertyVsBoost, DuplicateWeightsStress) {
     std::mt19937_64 rng(0xABCDull);
     constexpr int kTrials = 30;
     for (int trial = 0; trial < kTrials; ++trial) {
@@ -96,8 +113,15 @@ TEST(PropertyVsBoost, BoruvkaSeqDuplicateWeights) {
 
         auto g = mst::GraphCSR::from_edges(n, edges);
         double oracle = boost_mst_weight(n, edges);
-        auto rb = mst::boruvka_seq(g);
 
+        auto rk = mst::kruskal(n, edges);
+        auto rp = mst::prim(g);
+        auto rb = mst::boruvka_seq(g);
+        auto ro = mst::boruvka_omp(g, 4);
+
+        EXPECT_NEAR(rk.total_weight, oracle, 1e-9) << "trial=" << trial;
+        EXPECT_NEAR(rp.total_weight, oracle, 1e-9) << "trial=" << trial;
         EXPECT_NEAR(rb.total_weight, oracle, 1e-9) << "trial=" << trial;
+        EXPECT_NEAR(ro.total_weight, oracle, 1e-9) << "trial=" << trial;
     }
 }
