@@ -49,8 +49,18 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_library(mst INTERFACE)
-target_include_directories(mst INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(mst INTERFACE OpenMP::OpenMP_CXX)
+set(MST_SOURCES
+    src/graph_csr.cpp
+    src/union_find.cpp
+    src/union_find_atomic.cpp
+    src/boruvka_seq.cpp
+)
+
+add_library(mst STATIC ${MST_SOURCES})
+target_include_directories(mst PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(mst
+    PUBLIC OpenMP::OpenMP_CXX
+    PRIVATE mst_warnings
+)
 
 add_subdirectory(tests)
