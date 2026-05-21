@@ -17,9 +17,18 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_library(mst_warnings INTERFACE)
-target_compile_options(mst_warnings INTERFACE
-    -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wno-sign-conversion
-)
+if(MSVC)
+    target_compile_options(mst_warnings INTERFACE
+        /W4 /permissive- /Zc:__cplusplus /Zc:preprocessor /EHsc /utf-8
+    )
+    target_compile_definitions(mst_warnings INTERFACE
+        _CRT_SECURE_NO_WARNINGS NOMINMAX WIN32_LEAN_AND_MEAN
+    )
+else()
+    target_compile_options(mst_warnings INTERFACE
+        -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wno-sign-conversion
+    )
+endif()
 
 if(APPLE)
     foreach(_candidate "/opt/homebrew/opt/libomp" "/usr/local/opt/libomp")
@@ -36,6 +45,11 @@ if(APPLE)
 endif()
 find_package(OpenMP REQUIRED)
 
+if(MSVC)
+    set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_MULTITHREADED ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+endif()
 find_package(Boost REQUIRED COMPONENTS graph)
 
 include(FetchContent)

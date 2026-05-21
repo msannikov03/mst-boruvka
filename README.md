@@ -26,13 +26,29 @@ cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
+Windows (MSVC + vcpkg):
+
+```
+vcpkg install boost-graph:x64-windows-static
+cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release ^
+    -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake ^
+    -DVCPKG_TARGET_TRIPLET=x64-windows-static
+cmake --build build --config Release -j
+ctest --test-dir build -C Release --output-on-failure
+```
+
+Prerequisites on Windows: Visual Studio 2022 with the "Desktop development with C++"
+workload (provides MSVC + CMake + Ninja), and [vcpkg](https://vcpkg.io/) for Boost.
+OpenMP ships with MSVC; no separate install needed.
+
 ## Layout
 
 ```
 include/mst/   public headers
 src/           library implementations
 tests/         GoogleTest suites
-tools/         gen_graph, bench
+tools/         gen_graph, gen_grid, bench, dump_mst
+scripts/       python visualisation + bash/powershell bench sweep
 ```
 
 ## Algorithms
@@ -46,19 +62,24 @@ tools/         gen_graph, bench
 
 ## Tools
 
-`gen_graph` — Erdős–Rényi generator. Writes `n m\n` header then `m` lines of `u v w`.
+All four binaries speak the same plain-text edge-list format on stdin:
+line 1 is `n m`, followed by `m` lines of `u v w`.
+
+`gen_graph <n> <p> [seed]` — Erdős–Rényi `G(n, p)` generator, weights `U(0,1)`.
 
 ```
 ./build/tools/gen_graph 1000 0.01 42 > graph.txt
 ```
 
-`bench` — reads the same format from stdin, runs one algorithm, prints one CSV row.
+`gen_grid <rows> <cols> [seed]` — 2D 4-neighbour grid graph, weights `U(0,1)`.
+Useful for visualisation since vertex `i` has a natural position `(i % cols, i / cols)`.
 
 ```
-./build/tools/bench boruvka_omp 8 < graph.txt
+./build/tools/gen_grid 16 16 7 > grid.txt
 ```
 
-CSV schema (no header row, one row per run):
+`bench <algo> [threads]` — runs one of `kruskal | prim | boruvka_seq | boruvka_omp`,
+prints one CSV row:
 
 ```
 algo,threads,n,m,mst_edges,rounds,total_weight,wall_ms
@@ -66,6 +87,25 @@ algo,threads,n,m,mst_edges,rounds,total_weight,wall_ms
 
 `threads` is the requested thread count (0 = OMP default; only meaningful for `boruvka_omp`).
 `rounds` is the Borůvka iteration count (0 for Kruskal/Prim).
+
+`dump_mst <algo> [threads]` — same input, but instead of one CSV row prints
+`n m total_weight` then `u v w in_mst` per edge (in_mst is 0/1). Consumed by
+`scripts/visualize_mst.py` to render a static MST overlay.
+
+End-to-end visualisation example:
+
+```
+./build/tools/gen_grid 16 16 7 | ./build/tools/dump_mst boruvka_omp 4 \
+    | python3 scripts/visualize_mst.py --layout grid --grid-cols 16 --out mst.png
+```
+
+Sweep helper (bash on macOS/Linux/WSL, PowerShell on Windows):
+
+```
+scripts/run_bench_sweep.sh  graph.txt 1 2 4 8 > sweep.csv
+scripts/run_bench_sweep.ps1 -Graph graph.txt -Threads 1,2,4,8 > sweep.csv
+python3 scripts/plot_bench.py --in sweep.csv --out sweep.png
+```
 
 ## Notes
 
