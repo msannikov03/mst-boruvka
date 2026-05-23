@@ -9,3 +9,6 @@ target_link_libraries(bench PRIVATE mst mst_warnings)
 
 add_executable(dump_mst dump_mst.cpp)
 target_link_libraries(dump_mst PRIVATE mst mst_warnings)
+
+add_executable(profile_omp profile_omp.cpp)
+target_link_libraries(profile_omp PRIVATE mst mst_warnings)

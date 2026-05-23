@@ -4,6 +4,7 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <chrono>
 #include <limits>
 #include <vector>
 
@@ -18,9 +19,14 @@ inline bool better(uint64_t cur_id, double cur_w,
     if (cand_w != cur_w)   return cand_w < cur_w;
     return cand_id < cur_id;
 }
+
+using clk = std::chrono::steady_clock;
+inline double ms_since(const clk::time_point& t0) {
+    return std::chrono::duration<double, std::milli>(clk::now() - t0).count();
+}
 }  // namespace
 
-MSTResult boruvka_omp(const GraphCSR& g, int num_threads) {
+MSTResult boruvka_omp(const GraphCSR& g, int num_threads, BoruvkaOMPProfile* profile) {
     MSTResult result;
     if (g.n == 0 || g.m == 0) return result;
 
@@ -38,11 +44,17 @@ MSTResult boruvka_omp(const GraphCSR& g, int num_threads) {
         std::vector<double>(g.n, 0.0));
 
     while (uf.component_count() > 1 && result.edge_ids.size() + 1 < g.n) {
+        BoruvkaOMPProfile::Round round;
+        if (profile) round.components_in = uf.component_count();
+
+        const auto t_setup_begin = clk::now();
         for (uint32_t v = 0; v < g.n; ++v) comp[v] = uf.find(v);
         for (int t = 0; t < T; ++t) {
             std::fill(tl_id[t].begin(), tl_id[t].end(), kNoEdge);
         }
+        if (profile) round.setup_ms = ms_since(t_setup_begin);
 
+        const auto t_scan_begin = clk::now();
         const int64_t M = static_cast<int64_t>(g.m);
         #pragma omp parallel num_threads(T)
         {
@@ -65,7 +77,9 @@ MSTResult boruvka_omp(const GraphCSR& g, int num_threads) {
                 consider(cb);
             }
         }
+        if (profile) round.scan_ms = ms_since(t_scan_begin);
 
+        const auto t_merge_begin = clk::now();
         const int64_t N = static_cast<int64_t>(g.n);
         #pragma omp parallel for schedule(static) num_threads(T)
         for (int64_t c = 0; c < N; ++c) {
@@ -82,8 +96,11 @@ MSTResult boruvka_omp(const GraphCSR& g, int num_threads) {
             cheapest  [static_cast<size_t>(c)] = best_id;
             cheapest_w[static_cast<size_t>(c)] = best_w;
         }
+        if (profile) round.merge_ms = ms_since(t_merge_begin);
 
+        const auto t_contract_begin = clk::now();
         bool merged_anything = false;
+        uint32_t round_edges = 0;
         for (uint32_t c = 0; c < g.n; ++c) {
             uint64_t eid = cheapest[c];
             if (eid == kNoEdge) continue;
@@ -95,6 +112,13 @@ MSTResult boruvka_omp(const GraphCSR& g, int num_threads) {
             result.edge_ids.push_back(eid);
             result.total_weight += e.w;
             merged_anything = true;
+            ++round_edges;
+        }
+        if (profile) {
+            round.contract_ms    = ms_since(t_contract_begin);
+            round.edges_added    = round_edges;
+            round.components_out = uf.component_count();
+            profile->rounds.push_back(round);
         }
         ++result.rounds;
         if (!merged_anything) break;
