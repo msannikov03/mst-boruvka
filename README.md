@@ -47,8 +47,9 @@ OpenMP ships with MSVC; no separate install needed.
 include/mst/   public headers
 src/           library implementations
 tests/         GoogleTest suites
-tools/         gen_graph, gen_grid, bench, dump_mst
-scripts/       python visualisation + bash/powershell bench sweep
+tools/         gen_graph, gen_grid, bench, dump_mst, profile_omp
+scripts/       bench-sweep orchestrators, plot scripts, MST visualisation
+results/       experiment CSVs and figures (committed; regenerable)
 ```
 
 ## Algorithms
@@ -92,6 +93,11 @@ algo,threads,n,m,mst_edges,rounds,total_weight,wall_ms
 `n m total_weight` then `u v w in_mst` per edge (in_mst is 0/1). Consumed by
 `scripts/visualize_mst.py` to render a static MST overlay.
 
+`profile_omp <threads> [seed_tag]` — runs `boruvka_omp` with per-round per-phase
+timing instrumentation; prints CSV with columns
+`threads,seed,round,setup_ms,scan_ms,merge_ms,contract_ms,edges_added,components_in,components_out`.
+Consumed by `scripts/plot_e5_profile.py`.
+
 End-to-end visualisation example:
 
 ```
@@ -99,7 +105,7 @@ End-to-end visualisation example:
     | python3 scripts/visualize_mst.py --layout grid --grid-cols 16 --out mst.png
 ```
 
-Sweep helper (bash on macOS/Linux/WSL, PowerShell on Windows):
+Single-graph sweep helper (bash on macOS/Linux/WSL, PowerShell on Windows):
 
 ```
 scripts/run_bench_sweep.sh  graph.txt 1 2 4 8 > sweep.csv
@@ -107,13 +113,39 @@ scripts/run_bench_sweep.ps1 -Graph graph.txt -Threads 1,2,4,8 > sweep.csv
 python3 scripts/plot_bench.py --in sweep.csv --out sweep.png
 ```
 
+## Experiments
+
+The CSVs and PNGs under `results/` are produced by a fixed-seed sweep. Reproduce
+everything with one command (≈10 min on a multi-core machine):
+
+```
+scripts/run_all.sh
+```
+
+Or run a single experiment + plot:
+
+| Experiment | Runner | Plot | Output |
+|---|---|---|---|
+| **E1** algorithm comparison (4 algos × n) | `run_experiments.sh` | `plot_e1_algo_comparison.py` | `results/e1_algo_comparison.{csv,png}` |
+| **E2** strong scaling (n=10⁵, threads 1–10) | `run_experiments.sh` | `plot_e2_strong_scaling.py`     | `results/e2_strong_scaling.{csv,png}` |
+| **E3** size scaling (n=10³–10⁶, 1 vs 10 thr) | `run_experiments.sh` | `plot_e3_size_scaling.py`     | `results/e3_size_scaling.{csv,png}` |
+| **E4** Borůvka rounds vs log₂(n)             | `run_experiments.sh` | `plot_e4_rounds.py`           | `results/e4_rounds.{csv,png}` |
+| **E5** per-round phase breakdown             | `run_profile.sh`     | `plot_e5_profile.py`          | `results/e5_profile.{csv,png}` |
+| **E6** weak scaling                          | `run_weak_scaling.sh` | `plot_e6_weak_scaling.py`    | `results/e6_weak_scaling.{csv,png}` |
+| **E7** density × threads speedup heatmap     | `run_density_heatmap.sh` | `plot_e7_density_heatmap.py` | `results/e7_density_heatmap.{csv,png}` |
+| **E8** multi-density Erdős–Rényi (3 densities) | `run_multi_density.sh` | `plot_e8_multi_density.py` | `results/e8_multi_density.{csv,png}` |
+| **E9** 2D grid benchmark (3 sizes)           | `run_grid_benchmark.sh` | `plot_e9_grid_benchmark.py` | `results/e9_grid_benchmark.{csv,png}` |
+
+All sweeps use 5 seeds (42–46); plots show medians.
+
 ## Notes
 
 - On macOS, OpenMP requires `libomp` from Homebrew (Apple Clang does not ship it).
   The CMake build looks under both `/opt/homebrew/opt/libomp` (Apple Silicon) and
   `/usr/local/opt/libomp` (Intel).
 - All four implementations are cross-validated against
-  `boost::kruskal_minimum_spanning_tree` on random graphs in `test_property_vs_boost`.
+  `boost::kruskal_minimum_spanning_tree` on 90 random graphs (60 generic, 30 with
+  duplicate weights) in `test_property_vs_boost`.
 
 ## License
 
