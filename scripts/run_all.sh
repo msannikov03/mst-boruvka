@@ -36,6 +36,9 @@ scripts/run_multi_density.sh
 echo "==> E9: 2D grid benchmark" >&2
 scripts/run_grid_benchmark.sh
 
+echo "==> E10: geometric k-NN benchmark" >&2
+scripts/run_knn_benchmark.sh
+
 echo "==> rendering plots" >&2
 python3 scripts/plot_e1_algo_comparison.py
 python3 scripts/plot_e2_strong_scaling.py
@@ -46,6 +49,13 @@ python3 scripts/plot_e6_weak_scaling.py
 python3 scripts/plot_e7_density_heatmap.py
 python3 scripts/plot_e8_multi_density.py
 python3 scripts/plot_e9_grid_benchmark.py
+python3 scripts/plot_e10_knn_benchmark.py
 
-echo "==> done; all CSVs and PNGs in $ROOT/results/" >&2
+echo "==> E11: per-round MST animation on a 10x10 grid" >&2
+"$ROOT/build/tools/gen_grid" 10 10 7 \
+    | python3 scripts/animate_mst.py --layout grid --grid-cols 10 \
+                                     --out "$ROOT/results/e11_mst_animation.gif" \
+                                     --fps 1.5
+
+echo "==> done; all CSVs and figures in $ROOT/results/" >&2
 ls "$ROOT/results"

@@ -47,7 +47,7 @@ OpenMP ships with MSVC; no separate install needed.
 include/mst/   public headers
 src/           library implementations
 tests/         GoogleTest suites
-tools/         gen_graph, gen_grid, bench, dump_mst, profile_omp
+tools/         gen_graph, gen_grid, gen_knn, bench, dump_mst, profile_omp
 scripts/       bench-sweep orchestrators, plot scripts, MST visualisation
 results/       experiment CSVs and figures (committed; regenerable)
 ```
@@ -77,6 +77,15 @@ Useful for visualisation since vertex `i` has a natural position `(i % cols, i /
 
 ```
 ./build/tools/gen_grid 16 16 7 > grid.txt
+```
+
+`gen_knn <n> <k> [seed]` — Euclidean k-nearest-neighbour graph on `n` random
+points uniformly sampled from `[0,1]²`; edges are symmetrised (i↔j if either
+sees the other in their k-NN list); weight = Euclidean distance. Generation
+is brute-force O(n²); fine up to n≈10⁴.
+
+```
+./build/tools/gen_knn 1000 10 42 > knn.txt
 ```
 
 `bench <algo> [threads]` — runs one of `kruskal | prim | boruvka_seq | boruvka_omp`,
@@ -115,8 +124,14 @@ python3 scripts/plot_bench.py --in sweep.csv --out sweep.png
 
 ## Experiments
 
-The CSVs and PNGs under `results/` are produced by a fixed-seed sweep. Reproduce
-everything with one command (≈10 min on a multi-core machine):
+The CSVs and figures under `results/` are produced by a fixed-seed sweep. The
+plot and animation scripts need `matplotlib`, `networkx`, and `numpy`:
+
+```
+pip install -r requirements.txt
+```
+
+Reproduce everything with one command (≈10 min on a multi-core machine):
 
 ```
 scripts/run_all.sh
@@ -135,8 +150,10 @@ Or run a single experiment + plot:
 | **E7** density × threads speedup heatmap     | `run_density_heatmap.sh` | `plot_e7_density_heatmap.py` | `results/e7_density_heatmap.{csv,png}` |
 | **E8** multi-density Erdős–Rényi (3 densities) | `run_multi_density.sh` | `plot_e8_multi_density.py` | `results/e8_multi_density.{csv,png}` |
 | **E9** 2D grid benchmark (3 sizes)           | `run_grid_benchmark.sh` | `plot_e9_grid_benchmark.py` | `results/e9_grid_benchmark.{csv,png}` |
+| **E10** geometric k-NN benchmark (3 sizes)   | `run_knn_benchmark.sh`  | `plot_e10_knn_benchmark.py` | `results/e10_knn_benchmark.{csv,png}` |
+| **E11** per-round MST animation (10×10 grid) | `gen_grid \| animate_mst.py` (Python replay of Borůvka) | — | `results/e11_mst_animation.gif` |
 
-All sweeps use 5 seeds (42–46); plots show medians.
+All bench sweeps use 5 seeds (42–46); plots show medians.
 
 ## Notes
 
