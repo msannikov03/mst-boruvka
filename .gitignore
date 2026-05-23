@@ -18,6 +18,5 @@ compile_commands.json
 *.swo
 __pycache__/
 *.pyc
-results/
 *.csv.bak
 *.log

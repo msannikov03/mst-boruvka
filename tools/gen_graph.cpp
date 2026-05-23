@@ -1,26 +1,46 @@
 #include "mst/edge.hpp"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <random>
 #include <vector>
+
+// Erdős–Rényi G(n, p) generator. Skip-trick (geometric inter-arrival on the
+// pair sequence) keeps generation O(n + m) so n=10^6 sparse graphs are feasible.
 
 int main(int argc, char** argv) {
     if (argc < 3) {
         std::fprintf(stderr, "usage: %s <n> <p> [seed]\n", argv[0]);
         return 1;
     }
-    uint32_t n   = static_cast<uint32_t>(std::atoi(argv[1]));
-    double   p   = std::atof(argv[2]);
-    uint64_t seed = argc >= 4 ? std::strtoull(argv[3], nullptr, 10) : 42ull;
+    const uint32_t n    = static_cast<uint32_t>(std::atoi(argv[1]));
+    const double   p    = std::atof(argv[2]);
+    const uint64_t seed = argc >= 4 ? std::strtoull(argv[3], nullptr, 10) : 42ull;
 
     std::mt19937_64 rng(seed);
     std::uniform_real_distribution<double> u01(0.0, 1.0);
 
     std::vector<mst::Edge> edges;
-    for (uint32_t i = 0; i < n; ++i) {
-        for (uint32_t j = i + 1; j < n; ++j) {
-            if (u01(rng) < p) {
+
+    if (p > 0.0 && p < 1.0 && n >= 2) {
+        const double log_1mp = std::log1p(-p);
+        for (uint32_t i = 0; i + 1 < n; ++i) {
+            uint64_t j = i;
+            while (true) {
+                double u = u01(rng);
+                if (u >= 1.0) u = 1.0 - std::numeric_limits<double>::epsilon();
+                const uint64_t gap = static_cast<uint64_t>(std::floor(std::log(u) / log_1mp));
+                j += gap + 1;
+                if (j >= n) break;
+                edges.push_back({i, static_cast<uint32_t>(j), u01(rng)});
+            }
+        }
+    } else if (p >= 1.0 && n >= 2) {
+        edges.reserve(static_cast<size_t>(n) * (n - 1) / 2);
+        for (uint32_t i = 0; i + 1 < n; ++i) {
+            for (uint32_t j = i + 1; j < n; ++j) {
                 edges.push_back({i, j, u01(rng)});
             }
         }
