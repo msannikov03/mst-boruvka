@@ -12,3 +12,6 @@ target_link_libraries(dump_mst PRIVATE mst mst_warnings)
 
 add_executable(profile_omp profile_omp.cpp)
 target_link_libraries(profile_omp PRIVATE mst mst_warnings)
+
+add_executable(gen_knn gen_knn.cpp)
+target_link_libraries(gen_knn PRIVATE mst mst_warnings)
