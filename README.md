@@ -56,15 +56,16 @@ results/       experiment CSVs and figures (committed; regenerable)
 
 | Variant       | Header                       | Notes                              |
 |---------------|------------------------------|------------------------------------|
-| Kruskal       | `mst/kruskal.hpp`            | edge sort + locked Union-Find      |
+| Kruskal       | `mst/kruskal.hpp`            | edge sort + Union-Find             |
 | Prim          | `mst/prim.hpp`               | binary-heap `std::priority_queue`  |
 | Borůvka (seq) | `mst/boruvka_seq.hpp`        | classical, deterministic tie-break |
 | Borůvka (OMP) | `mst/boruvka_omp.hpp`        | OpenMP min-edge reduction          |
 
 ## Tools
 
-All four binaries speak the same plain-text edge-list format on stdin:
-line 1 is `n m`, followed by `m` lines of `u v w`.
+All tools share the same plain-text edge-list format: line 1 is `n m`, followed by `m`
+lines of `u v w`. The three generators write it to stdout; `bench`, `dump_mst`, and
+`profile_omp` read it from stdin.
 
 `gen_graph <n> <p> [seed]` — Erdős–Rényi `G(n, p)` generator, weights `U(0,1)`.
 
