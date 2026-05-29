@@ -30,7 +30,11 @@ int main(int argc, char** argv) {
             uint64_t j = i;
             while (true) {
                 double u = u01(rng);
-                if (u >= 1.0) u = 1.0 - std::numeric_limits<double>::epsilon();
+                // Guard both ends: u==0 makes log(u)=-inf (gap overflow / UB on
+                // the uint64 cast); u>=1 makes log(u)>=0. u01 samples [0,1), so
+                // only the lower clamp can actually fire, but keep both for safety.
+                if (u <= 0.0) u = std::numeric_limits<double>::min();
+                else if (u >= 1.0) u = 1.0 - std::numeric_limits<double>::epsilon();
                 const uint64_t gap = static_cast<uint64_t>(std::floor(std::log(u) / log_1mp));
                 j += gap + 1;
                 if (j >= n) break;
